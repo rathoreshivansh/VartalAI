@@ -110,5 +110,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Special thanks to [Hugging Face](https://huggingface.co) for providing the powerful transformers library that made it possible to create this chatbot.
 - Thanks to [Google Colab](https://colab.research.google.com/) for providing the cloud-based platform that allows easy collaboration and execution of machine learning models.
-- This project is inspired by tutorials and labs from [Cognitive Class](https://cognitiveclass.ai) on creating simple chatbots.
 - Thanks to the open-source community for providing free and accessible tools for machine learning and natural language processing.
