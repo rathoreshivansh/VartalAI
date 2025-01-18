@@ -1,39 +1,28 @@
-from flask import Flask, request, render_template, jsonify
-from flask_cors import CORS
-import json
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from flask import Flask, request, jsonify
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 
 app = Flask(__name__)
-CORS(app)
 
-model_name = "facebook/blenderbot-400M-distill"
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+# Load the tokenizer and model
+model_name = "nvidia/Llama-3.1-Nemotron-70B-Instruct-HF"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-conversation_history = []
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    device_map="auto",
+    torch_dtype=torch.float16
+)
 
-# This should render index.html when you visit the root route
-@app.route('/', methods=['GET'])
-def home():
-    return render_template('index.html')  # Make sure this is correct
+@app.route('/chat', methods=['GET'])
+def chat():
+    user_input = request.args.get('message')
+    if not user_input:
+        return jsonify({"error": "No input provided"}), 400
 
-@app.route('/chatbot', methods=['POST'])
-def handle_prompt():
-    data = json.loads(request.data)
-    input_text = data.get('prompt', '')
-
-    # Generate conversation history string
-    history = "\n".join(conversation_history)
-    # Tokenize input
-    inputs = tokenizer.encode_plus(history, input_text, return_tensors="pt")
-    # Generate response
-    outputs = model.generate(**inputs)
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
-
-    # Update conversation history
-    conversation_history.append(input_text)
-    conversation_history.append(response)
-
-    return jsonify({'response': response})
+    inputs = tokenizer(user_input, return_tensors="pt").to("cuda")
+    outputs = model.generate(**inputs, max_new_tokens=512, do_sample=True)
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return jsonify({"response": response})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
